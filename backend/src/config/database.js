@@ -1,10 +1,14 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
+import { mkdirSync } from 'node:fs';
+
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
 const databasePath = path.resolve(currentDir, '../../database/central.db')
+
+mkdirSync(path.dirname(databasePath), { recursive: true });
 
 const db = new Database(databasePath);
 

@@ -77,3 +77,24 @@ export function updateStatus(id, status, now) {
 
   return findById(id);
 }
+
+export function countByStatus() {
+  return db
+    .prepare(`
+      SELECT status, COUNT(*) AS total
+      FROM requests
+      GROUP BY status
+    `)
+    .all();
+}
+
+export function findRecent(limit = 5) {
+  return db
+    .prepare(`
+      SELECT *
+      FROM requests
+      ORDER BY created_at DESC, id DESC
+      LIMIT ?
+    `)
+    .all(limit);
+}

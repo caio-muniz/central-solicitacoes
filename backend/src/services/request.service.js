@@ -57,7 +57,7 @@ function asTrimmedText(value) {
 }
 
 // Valida os dados recebidos antes de realizar o cadastro
-function validateNewRequest(input = {}) {
+function validateRequestData(input = {}, action) {
   const data = {
     title: asTrimmedText(input.title),
     description: asTrimmedText(input.description),
@@ -83,7 +83,7 @@ function validateNewRequest(input = {}) {
     fields.priority = `Prioridade inválida. Valores aceitos: ${PRIORITIES.join(', ')}.`;
 
   if (Object.keys(fields).length > 0) {
-    throw new AppError(400, 'Não foi possível cadastrar a solicitação. Revise os campos.', fields);
+    throw new AppError(400, `Não foi possível ${action} a solicitação. Revise os campos.`, fields);
   }
   return data;
 }
@@ -125,9 +125,22 @@ export function getMetadata() {
 }
 
 export function createRequest(input) {
-  const data = validateNewRequest(input);
+  const data = validateRequestData(input, 'cadastrar');
   const row = requestRepository.create({ ...data, now: new Date().toISOString() });
   return toRequestResponse(row);
+}
+
+export function updateRequest(rawId, input) {
+  const request = findExistingRequest(rawId);
+  const data = validateRequestData(input, 'atualizar');
+  const row = requestRepository.update(request.id, { ...data, now: new Date().toISOString() });
+  return toRequestResponse(row);
+}
+
+export function deleteRequest(rawId) {
+  const request = findExistingRequest(rawId);
+  requestRepository.remove(request.id);
+  return { id: request.id };
 }
 
 export function listRequests(query) {

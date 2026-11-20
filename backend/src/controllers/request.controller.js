@@ -17,6 +17,14 @@ export function getById(req, res) {
   res.status(200).json({ data: requestService.getRequest(req.params.id) });
 }
 
+export function update(req, res) {
+  res.status(200).json({ data: requestService.updateRequest(req.params.id, req.body) });
+}
+
+export function remove(req, res) {
+  res.status(200).json({ data: requestService.deleteRequest(req.params.id) });
+}
+
 export function advanceStatus(req, res) {
   res.status(200).json({ data: requestService.advanceStatus(req.params.id, req.body) });
 }

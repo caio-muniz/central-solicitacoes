@@ -12,5 +12,7 @@ router.get('/requests', controller.list);
 router.get('/requests/:id', controller.getById);
 router.patch('/requests/:id/status', controller.advanceStatus);
 router.get('/requests/:id/history', controller.getHistory);
+router.put('/requests/:id', controller.update);
+router.delete('/requests/:id', controller.remove);
 
 export default router;

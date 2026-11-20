@@ -78,6 +78,21 @@ export function updateStatus(id, status, now) {
   return findById(id);
 }
 
+// Função para atualizar uma solicitacao
+export function update(id, { title, description, category, priority, now }) {
+  db.prepare(
+    `UPDATE requests
+     SET title = ?, description = ?, category = ?, priority = ?, updated_at = ?
+     WHERE id = ?`
+  ).run(title, description, category, priority, now, id);
+  return findById(id);
+}
+
+// Funçao para excluir uma solicitação
+export function remove(id) {
+  db.prepare('DELETE FROM requests WHERE id = ?').run(id);
+}
+
 export function countByStatus() {
   return db
     .prepare(`

@@ -13,6 +13,13 @@ function getPageInfo(pathname) {
   const list = { label: 'Solicitações', to: '/solicitacoes' };
   if (pathname === '/solicitacoes') return { title: 'Solicitações', trail: [] };
   if (pathname === '/solicitacoes/nova') return { title: 'Nova solicitação', trail: [list] };
+  const editMatch = pathname.match(/^\/solicitacoes\/(\d+)\/editar$/);
+  if (editMatch) {
+    return {
+      title: `Editar solicitação #${editMatch[1]}`,
+      trail: [list, { label: `Solicitação #${editMatch[1]}`, to: `/solicitacoes/${editMatch[1]}` }],
+    };
+  }
   const id = pathname.split('/').pop();
   return { title: `Solicitação #${id}`, trail: [list] };
 }

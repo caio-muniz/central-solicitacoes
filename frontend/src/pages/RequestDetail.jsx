@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { advanceStatus, getHistory, getRequest } from '../services/api.js';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
+import { advanceStatus, deleteRequest, getHistory, getRequest } from '../services/api.js';
 import useAsync from '../hooks/useAsync.js';
 import { ErrorMessage, Loading } from '../components/Feedback.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import { PriorityBadge, StatusBadge } from '../components/Badge.jsx';
 import { formatDateTime } from '../utils/format.js';
 
@@ -12,10 +13,20 @@ const loadDetail = (id) => Promise.all([getRequest(id), getHistory(id)]).then(([
 export default function RequestDetail() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(() => loadDetail(id), [id]);
   const [advancing, setAdvancing] = useState(false);
   const [actionError, setActionError] = useState('');
-  const [notice, setNotice] = useState(location.state?.created ? 'Solicitação cadastrada com sucesso.' : '');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [notice, setNotice] = useState(
+    location.state?.created
+      ? 'Solicitação cadastrada com sucesso.'
+      : location.state?.updated
+        ? 'Solicitação atualizada com sucesso.'
+        : ''
+  );
 
   async function handleAdvance() {
     setAdvancing(true);
@@ -29,6 +40,18 @@ export default function RequestDetail() {
       setActionError(err.message);
     } finally {
       setAdvancing(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteRequest(id);
+      navigate('/solicitacoes', { state: { deleted: true } });
+    } catch (err) {
+      setDeleteError(err.message);
+      setDeleting(false);
     }
   }
 
@@ -58,6 +81,10 @@ export default function RequestDetail() {
           </dl>
           <div className="form__actions">
             {backLink}
+            <Link to={`/solicitacoes/${id}/editar`} className="btn btn--secondary"><Pencil size={16} /> Editar</Link>
+            <button type="button" className="btn btn--danger-outline" onClick={() => { setDeleteError(''); setConfirmingDelete(true); }}>
+              <Trash2 size={16} /> Excluir
+            </button>
             {request.nextStatus && (
               <button type="button" className="btn btn--primary" onClick={handleAdvance} disabled={advancing}>
                 {advancing ? 'Atualizando...' : `Avançar para ${request.nextStatus}`} <ArrowRight size={16} />
@@ -82,6 +109,19 @@ export default function RequestDetail() {
           )}
         </section>
       </div>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title="Excluir solicitação?"
+          message={`A solicitação "${request.title}" e todo o seu histórico de status serão removidos permanentemente. Esta ação não pode ser desfeita.`}
+          confirmLabel="Excluir"
+          loadingLabel="Excluindo..."
+          loading={deleting}
+          error={deleteError}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </>
   );
 }

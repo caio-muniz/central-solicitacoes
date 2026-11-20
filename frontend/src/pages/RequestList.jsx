@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, FilePlus2, Search, X } from 'lucide-react';
-import { listRequests } from '../services/api.js';
+import { Link, useLocation } from 'react-router-dom';
+import { CheckCircle2, Eye, FilePlus2, Pencil, Search, Trash2, X } from 'lucide-react';
+import { deleteRequest, listRequests } from '../services/api.js';
 import useAsync from '../hooks/useAsync.js';
 import useMeta from '../hooks/useMeta.js';
 import { EmptyState, ErrorMessage, Loading } from '../components/Feedback.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import { PriorityBadge, StatusBadge } from '../components/Badge.jsx';
 import { formatDate } from '../utils/format.js';
 
@@ -12,8 +13,13 @@ const INITIAL_FILTERS = { search: '', status: '', priority: '', sort: 'recent' }
 
 export default function RequestList() {
   const { statuses, priorities } = useMeta();
+  const location = useLocation();
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [notice, setNotice] = useState(location.state?.deleted ? 'Solicitação excluída com sucesso.' : '');
+  const [toDelete, setToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(filters.search), 300);
@@ -25,6 +31,21 @@ export default function RequestList() {
     () => listRequests({ status, priority, sort, search: debouncedSearch }),
     [status, priority, sort, debouncedSearch]
   );
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteRequest(toDelete.id);
+      setNotice(`Solicitação "${toDelete.title}" excluída com sucesso.`);
+      setToDelete(null);
+      reload();
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const update = (field) => (event) => setFilters((previous) => ({ ...previous, [field]: event.target.value }));
   const hasFilters = filters.search || filters.status || filters.priority;
@@ -41,6 +62,8 @@ export default function RequestList() {
         </div>
         {newRequestButton}
       </div>
+
+      {notice && <div className="alert alert--success" role="status"><CheckCircle2 size={18} /> {notice}</div>}
 
       <section className="card">
         <div className="filters">
@@ -90,7 +113,13 @@ export default function RequestList() {
                     <td><PriorityBadge priority={item.priority} /></td>
                     <td><StatusBadge status={item.status} /></td>
                     <td>{formatDate(item.createdAt)}</td>
-                    <td><Link to={`/solicitacoes/${item.id}`} className="btn btn--secondary btn--sm"><Eye size={15} /> Ver detalhes</Link></td>
+                    <td>
+                      <div className="row-actions">
+                        <Link to={`/solicitacoes/${item.id}`} className="btn btn--secondary btn--sm"><Eye size={15} /> Ver detalhes</Link>
+                        <Link to={`/solicitacoes/${item.id}/editar`} className="icon-btn icon-btn--bordered" aria-label={`Editar solicitação ${item.title}`} title="Editar"><Pencil size={15} /></Link>
+                        <button type="button" className="icon-btn icon-btn--bordered icon-btn--danger" aria-label={`Excluir solicitação ${item.title}`} title="Excluir" onClick={() => { setDeleteError(''); setToDelete(item); }}><Trash2 size={15} /></button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -99,6 +128,19 @@ export default function RequestList() {
           </div>
         )}
       </section>
+
+      {toDelete && (
+        <ConfirmDialog
+          title="Excluir solicitação?"
+          message={`A solicitação "${toDelete.title}" e todo o seu histórico de status serão removidos permanentemente. Esta ação não pode ser desfeita.`}
+          confirmLabel="Excluir"
+          loadingLabel="Excluindo..."
+          loading={deleting}
+          error={deleteError}
+          onConfirm={handleDelete}
+          onCancel={() => setToDelete(null)}
+        />
+      )}
     </>
   );
 }

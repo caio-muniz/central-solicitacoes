@@ -38,3 +38,7 @@ export const createRequest = (data) =>
   call({ url: '/requests', method: 'post', data }).then((body) => body.data);
 export const advanceStatus = (id, status) =>
   call({ url: `/requests/${id}/status`, method: 'patch', data: { status } }).then((body) => body.data);
+export const updateRequest = (id, data) =>
+  call({ url: `/requests/${id}`, method: 'put', data }).then((body) => body.data);
+export const deleteRequest = (id) =>
+  call({ url: `/requests/${id}`, method: 'delete' }).then((body) => body.data);
